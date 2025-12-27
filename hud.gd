@@ -5,7 +5,6 @@ extends CanvasLayer
 @onready var time_label: Label = $MarginContainer/VBoxContainer/TimeLabel
 @onready var position_label: Label = $MarginContainer/VBoxContainer/PositionLabel
 @onready var nearest_label: Label = $MarginContainer/VBoxContainer/NearestLabel
-@onready var controls_label: Label = $MarginContainer/VBoxContainer/ControlsLabel
 
 var player: Node2D
 var solar_system: Node2D
@@ -35,7 +34,9 @@ func update_speed_display():
 func update_accel_display():
 	var accel = player.get_acceleration_g()
 	if accel > 0:
-		accel_label.text = "Thrust: %.1fg" % accel
+		accel_label.text = "Thrust: Forward %.1fg" % accel
+	elif accel < 0:
+		accel_label.text = "Thrust: Retro %.1fg" % abs(accel)
 	else:
 		accel_label.text = "Thrust: Coasting"
 
@@ -67,7 +68,7 @@ func find_nearest_planet() -> String:
 			nearest_dist = dist
 			nearest_name = planet.name
 
-	return "%s (%.1f M km)" % [nearest_name, nearest_dist]
+	return "%s (%s)" % [nearest_name, format_distance(nearest_dist)]
 
 func format_speed(speed_km_s: float) -> String:
 	if speed_km_s >= 299792:  # Speed of light
