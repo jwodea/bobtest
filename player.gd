@@ -108,9 +108,10 @@ func update_trajectory(_time_scale: float):
 	var sim_position_local = Vector2.ZERO  # Local position for drawing
 
 	# Simulate future trajectory with gravity
-	# Use smaller steps for accuracy, longer total time for visibility
-	var step_time := 500.0  # seconds per simulation step
-	var num_steps := 400  # More steps for orbital paths
+	# Need long simulation to see orbital curvature (Earth orbit = 365 days)
+	# 20000s per step * 600 steps = 139 days of trajectory
+	var step_time := 20000.0  # seconds per simulation step (~5.5 hours)
+	var num_steps := 600  # Enough to see significant orbital arc
 
 	for i in range(num_steps):
 		# Apply gravity at current simulated position
@@ -125,7 +126,7 @@ func update_trajectory(_time_scale: float):
 		sim_position_local += delta_pos
 
 		# Add point every few steps to keep line smooth
-		if i % 8 == 0:
+		if i % 4 == 0:
 			points.append(sim_position_local)
 
 	trajectory_line.points = points
