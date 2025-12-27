@@ -65,6 +65,7 @@ func handle_thrust():
 		show_trajectory = !show_trajectory
 
 func apply_physics(scaled_delta: float):
+	# Apply thrust acceleration
 	if acceleration_g != 0.0:
 		# Convert g to km/s² and apply in thrust direction
 		var accel_km_s2 = abs(acceleration_g) * G_ACCEL_KM_S2
@@ -72,6 +73,11 @@ func apply_physics(scaled_delta: float):
 
 		# Update velocity: v += a * t
 		velocity_km_s += direction * accel_km_s2 * scaled_delta
+
+	# Apply gravitational acceleration from all bodies
+	if solar_system and solar_system.has_method("get_gravity_at"):
+		var gravity_accel = solar_system.get_gravity_at(position)
+		velocity_km_s += gravity_accel * scaled_delta
 
 	# Update position: convert km/s to game units/s
 	var velocity_units_per_s = velocity_km_s / KM_PER_UNIT
@@ -85,7 +91,7 @@ func update_visuals():
 	if retro_flame:
 		retro_flame.visible = acceleration_g < 0
 
-func update_trajectory(time_scale: float):
+func update_trajectory(_time_scale: float):
 	if not trajectory_line:
 		return
 
@@ -93,25 +99,34 @@ func update_trajectory(time_scale: float):
 	if not show_trajectory:
 		return
 
-	# Predict future positions
+	# Predict future positions with gravity simulation
 	var points := PackedVector2Array()
 	points.append(Vector2.ZERO)  # Start at ship position (local coords)
 
 	var sim_velocity = velocity_km_s
-	var sim_position = Vector2.ZERO
+	var sim_position_world = position  # World position for gravity calc
+	var sim_position_local = Vector2.ZERO  # Local position for drawing
 
-	# Simulate 100 steps into the future
-	# Each step represents some amount of game time
-	var step_time := 1000.0  # seconds per step (adjusted by time scale display)
+	# Simulate future trajectory with gravity
+	# Use smaller steps for accuracy, longer total time for visibility
+	var step_time := 500.0  # seconds per simulation step
+	var num_steps := 400  # More steps for orbital paths
 
-	for i in range(100):
+	for i in range(num_steps):
+		# Apply gravity at current simulated position
+		if solar_system and solar_system.has_method("get_gravity_at"):
+			var gravity_accel = solar_system.get_gravity_at(sim_position_world)
+			sim_velocity += gravity_accel * step_time
+
 		# Move based on velocity
 		var vel_units = sim_velocity / KM_PER_UNIT
-		sim_position += vel_units * step_time
+		var delta_pos = vel_units * step_time
+		sim_position_world += delta_pos
+		sim_position_local += delta_pos
 
-		# Add point every few steps to keep line smooth but not too detailed
-		if i % 5 == 0:
-			points.append(sim_position)
+		# Add point every few steps to keep line smooth
+		if i % 8 == 0:
+			points.append(sim_position_local)
 
 	trajectory_line.points = points
 
