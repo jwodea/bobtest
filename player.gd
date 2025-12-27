@@ -15,11 +15,11 @@ var acceleration_g := 0.0  # Current acceleration magnitude in g
 var thrust_direction := Vector2.RIGHT  # Direction ship is facing
 var show_trajectory := true  # Toggle trajectory line
 
-# Reference to solar system for time scale
+# Reference to solar system for time scale and trajectory
 @onready var solar_system: Node2D = get_parent()
 @onready var thrust_flame: Polygon2D = $ThrustFlame
 @onready var retro_flame: Polygon2D = $RetroFlame
-@onready var trajectory_line: Line2D = $TrajectoryLine
+@onready var trajectory_line: Line2D = get_node_or_null("../TrajectoryLine")
 
 func _ready():
 	# Initialize ship facing direction from rotation
@@ -100,12 +100,12 @@ func update_trajectory(_time_scale: float):
 		return
 
 	# Predict future positions with gravity simulation
+	# Line is in world space (child of SolarSystem, not Player)
 	var points := PackedVector2Array()
-	points.append(Vector2.ZERO)  # Start at ship position (local coords)
+	points.append(position)  # Start at current ship position (world coords)
 
 	var sim_velocity = velocity_km_s
-	var sim_position_world = position  # World position for gravity calc
-	var sim_position_local = Vector2.ZERO  # Local position for drawing
+	var sim_position = position  # World position
 
 	# Simulate future trajectory with gravity
 	# Need long simulation to see orbital curvature (Earth orbit = 365 days)
@@ -116,18 +116,16 @@ func update_trajectory(_time_scale: float):
 	for i in range(num_steps):
 		# Apply gravity at current simulated position
 		if solar_system and solar_system.has_method("get_gravity_at"):
-			var gravity_accel = solar_system.get_gravity_at(sim_position_world)
+			var gravity_accel = solar_system.get_gravity_at(sim_position)
 			sim_velocity += gravity_accel * step_time
 
 		# Move based on velocity
 		var vel_units = sim_velocity / KM_PER_UNIT
-		var delta_pos = vel_units * step_time
-		sim_position_world += delta_pos
-		sim_position_local += delta_pos
+		sim_position += vel_units * step_time
 
 		# Add point every few steps to keep line smooth
 		if i % 4 == 0:
-			points.append(sim_position_local)
+			points.append(sim_position)
 
 	trajectory_line.points = points
 
