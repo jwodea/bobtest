@@ -1,0 +1,14 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Exports
+*.exe
+*.x86_64
+*.dmg
+*.apk
+*.pck
+
+# System files
+.DS_Store
+Thumbs.db
