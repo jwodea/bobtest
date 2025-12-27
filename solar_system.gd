@@ -92,9 +92,9 @@ func create_planet_node(planet_name: String, distance: float, radius_km: float, 
 
 func _process(_delta):
 	# Time scale controls
-	if Input.is_action_just_pressed("ui_page_up"):
+	if Input.is_action_just_pressed("time_faster"):
 		time_scale = clamp(time_scale * 10.0, MIN_TIME_SCALE, MAX_TIME_SCALE)
-	if Input.is_action_just_pressed("ui_page_down"):
+	if Input.is_action_just_pressed("time_slower"):
 		time_scale = clamp(time_scale / 10.0, MIN_TIME_SCALE, MAX_TIME_SCALE)
 
 func get_time_scale() -> float:

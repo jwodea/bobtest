@@ -1,74 +1,119 @@
 extends Node2D
 
 # Player spaceship with acceleration-based physics
-# Controls: Arrow keys to accelerate, not to set speed directly
+# Controls: W/S for thrust, A/D to rotate, T for trajectory
 
 # Physics constants
 const KM_PER_UNIT := 1_000_000.0  # 1 game unit = 1 million km
 const G_ACCEL_KM_S2 := 0.0098  # 1g = 9.8 m/s² = 0.0098 km/s²
 const MAX_G := 5.0  # Maximum acceleration in g
+const ROTATION_SPEED := 2.0  # Radians per second for ship rotation
 
 # Current state
 var velocity_km_s := Vector2.ZERO  # Velocity in km/s
 var acceleration_g := 0.0  # Current acceleration magnitude in g
-var acceleration_direction := Vector2.ZERO  # Direction of thrust
+var thrust_direction := Vector2.RIGHT  # Direction ship is facing
+var show_trajectory := true  # Toggle trajectory line
 
 # Reference to solar system for time scale
 @onready var solar_system: Node2D = get_parent()
 @onready var thrust_flame: Polygon2D = $ThrustFlame
+@onready var retro_flame: Polygon2D = $RetroFlame
+@onready var trajectory_line: Line2D = $TrajectoryLine
+
+func _ready():
+	# Initialize ship facing direction from rotation
+	thrust_direction = Vector2.RIGHT.rotated(rotation)
 
 func _process(delta):
-	var time_scale = solar_system.get_time_scale() if solar_system else 1.0
+	var time_scale := 1.0
+	if solar_system and solar_system.has_method("get_time_scale"):
+		time_scale = solar_system.get_time_scale()
 	var scaled_delta = delta * time_scale
 
-	handle_input()
+	handle_rotation(delta)  # Rotation uses real delta, not time-scaled
+	handle_thrust()
 	apply_physics(scaled_delta)
-	update_rotation()
+	update_visuals()
+	update_trajectory(time_scale)
 
-func handle_input():
-	# Get acceleration direction from input
-	acceleration_direction = Vector2.ZERO
+func handle_rotation(delta: float):
+	# A/D or Left/Right to rotate ship
+	var rotate_input := 0.0
 
-	if Input.is_action_pressed("ui_right"):
-		acceleration_direction.x += 1
-	if Input.is_action_pressed("ui_left"):
-		acceleration_direction.x -= 1
-	if Input.is_action_pressed("ui_down"):
-		acceleration_direction.y += 1
-	if Input.is_action_pressed("ui_up"):
-		acceleration_direction.y -= 1
+	if Input.is_action_pressed("rotate_left"):
+		rotate_input -= 1.0
+	if Input.is_action_pressed("rotate_right"):
+		rotate_input += 1.0
 
-	# Normalize direction
-	if acceleration_direction.length() > 0:
-		acceleration_direction = acceleration_direction.normalized()
-		acceleration_g = MAX_G  # Apply max acceleration when thrusting
-	else:
-		acceleration_g = 0.0  # No thrust = no acceleration (space!)
+	if rotate_input != 0.0:
+		rotation += rotate_input * ROTATION_SPEED * delta
+		thrust_direction = Vector2.RIGHT.rotated(rotation)
+
+func handle_thrust():
+	acceleration_g = 0.0
+
+	# W or Up = thrust forward (in direction ship faces)
+	if Input.is_action_pressed("thrust_forward"):
+		acceleration_g = MAX_G
+	# S or Down = thrust backward (retro, slow down)
+	elif Input.is_action_pressed("thrust_backward"):
+		acceleration_g = -MAX_G  # Negative for retrograde
+
+	# Toggle trajectory with T
+	if Input.is_action_just_pressed("toggle_trajectory"):
+		show_trajectory = !show_trajectory
 
 func apply_physics(scaled_delta: float):
-	if acceleration_g > 0:
-		# Convert g to km/s² and apply
-		var accel_km_s2 = acceleration_g * G_ACCEL_KM_S2
+	if acceleration_g != 0.0:
+		# Convert g to km/s² and apply in thrust direction
+		var accel_km_s2 = abs(acceleration_g) * G_ACCEL_KM_S2
+		var direction = thrust_direction if acceleration_g > 0 else -thrust_direction
 
 		# Update velocity: v += a * t
-		velocity_km_s += acceleration_direction * accel_km_s2 * scaled_delta
+		velocity_km_s += direction * accel_km_s2 * scaled_delta
 
 	# Update position: convert km/s to game units/s
-	# velocity is in km/s, position is in game units (million km)
-	# So we divide by KM_PER_UNIT to get units/s
 	var velocity_units_per_s = velocity_km_s / KM_PER_UNIT
 	position += velocity_units_per_s * scaled_delta
 
-func update_rotation():
-	# Rotate ship to face acceleration direction when thrusting, else velocity
-	if acceleration_g > 0 and acceleration_direction.length() > 0:
-		rotation = acceleration_direction.angle()
-	elif velocity_km_s.length() > 0.001:
-		rotation = velocity_km_s.angle()
-
-	# Show thrust flame when accelerating
+func update_visuals():
+	# Show thrust flame when accelerating forward
 	if thrust_flame:
 		thrust_flame.visible = acceleration_g > 0
+	# Show retro flame when braking
+	if retro_flame:
+		retro_flame.visible = acceleration_g < 0
+
+func update_trajectory(time_scale: float):
+	if not trajectory_line:
+		return
+
+	trajectory_line.visible = show_trajectory
+	if not show_trajectory:
+		return
+
+	# Predict future positions
+	var points := PackedVector2Array()
+	points.append(Vector2.ZERO)  # Start at ship position (local coords)
+
+	var sim_velocity = velocity_km_s
+	var sim_position = Vector2.ZERO
+
+	# Simulate 100 steps into the future
+	# Each step represents some amount of game time
+	var step_time := 1000.0  # seconds per step (adjusted by time scale display)
+
+	for i in range(100):
+		# Move based on velocity
+		var vel_units = sim_velocity / KM_PER_UNIT
+		sim_position += vel_units * step_time
+
+		# Add point every few steps to keep line smooth but not too detailed
+		if i % 5 == 0:
+			points.append(sim_position)
+
+	trajectory_line.points = points
 
 # Getters for HUD
 func get_speed_km_s() -> float:
@@ -80,5 +125,5 @@ func get_velocity_km_s() -> Vector2:
 func get_acceleration_g() -> float:
 	return acceleration_g
 
-func get_acceleration_direction() -> Vector2:
-	return acceleration_direction
+func is_thrusting() -> bool:
+	return acceleration_g != 0.0

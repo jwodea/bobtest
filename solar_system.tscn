@@ -12,6 +12,10 @@ script = ExtResource("1_solar")
 position = Vector2(149.6, 0)
 script = ExtResource("2_player")
 
+[node name="TrajectoryLine" type="Line2D" parent="Player"]
+width = 2.0
+default_color = Color(0.3, 0.8, 0.3, 0.5)
+
 [node name="Ship" type="Polygon2D" parent="Player"]
 color = Color(0.2, 0.9, 0.3, 1)
 polygon = PackedVector2Array(15, 0, -10, -8, -5, 0, -10, 8)
@@ -21,18 +25,23 @@ visible = false
 color = Color(1, 0.5, 0, 1)
 polygon = PackedVector2Array(-5, 0, -20, -5, -25, 0, -20, 5)
 
+[node name="RetroFlame" type="Polygon2D" parent="Player"]
+visible = false
+position = Vector2(15, 0)
+color = Color(0.4, 0.6, 1, 1)
+polygon = PackedVector2Array(0, 0, 10, -4, 15, 0, 10, 4)
+
 [node name="Camera2D" type="Camera2D" parent="Player"]
-zoom = Vector2(0.5, 0.5)
+zoom = Vector2(0.3, 0.3)
 script = ExtResource("3_camera")
-target_path = NodePath("..")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("4_hud")
 
 [node name="MarginContainer" type="MarginContainer" parent="HUD"]
 anchors_preset = 0
-offset_right = 350.0
-offset_bottom = 200.0
+offset_right = 400.0
+offset_bottom = 250.0
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 
@@ -69,8 +78,16 @@ theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 16
 text = "Nearest: Earth"
 
+[node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
 [node name="ControlsLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-theme_override_font_sizes/font_size = 14
-text = "Controls: Arrows=Thrust | PgUp/PgDn=Time | Scroll=Zoom"
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "W/S = Thrust forward/back
+A/D = Rotate ship
+Q/E or scroll = Zoom
+PgUp/PgDn = Time scale
+T = Toggle trajectory"

@@ -1,49 +1,51 @@
 extends Camera2D
 
 # Camera that follows the player with zoom controls
+# Zoom: Mouse wheel, +/-, or Q/E
 
-@export var target_path: NodePath
 var target: Node2D
 
 # Zoom settings
-var zoom_level := 1.0
-const MIN_ZOOM := 0.001  # Zoomed out to see whole solar system
-const MAX_ZOOM := 10.0   # Zoomed in close
-const ZOOM_SPEED := 0.1
+var zoom_level := 0.3
+const MIN_ZOOM := 0.0005  # Zoomed out to see whole solar system
+const MAX_ZOOM := 20.0    # Zoomed in close
+const ZOOM_STEP := 1.3    # Multiplier per zoom action
+const ZOOM_SMOOTH := 10.0 # Smoothing speed
+
+var target_zoom := 0.3
 
 func _ready():
-	if target_path:
-		target = get_node_or_null(target_path)
-
-	# Start zoomed out enough to see inner planets
-	zoom_level = 0.5
+	# Get the player (parent node)
+	target = get_parent()
+	target_zoom = zoom_level
 	zoom = Vector2(zoom_level, zoom_level)
 
-func _process(_delta):
-	if target:
-		position = target.position
+func _process(delta):
+	# Smooth zoom
+	zoom_level = lerp(zoom_level, target_zoom, ZOOM_SMOOTH * delta)
+	zoom = Vector2(zoom_level, zoom_level)
 
-	handle_zoom_input()
-
-func handle_zoom_input():
-	var zoom_changed := false
-
+func _unhandled_input(event):
 	# Mouse wheel zoom
-	if Input.is_action_just_pressed("zoom_in"):
-		zoom_level *= 1.2
-		zoom_changed = true
-	if Input.is_action_just_pressed("zoom_out"):
-		zoom_level /= 1.2
-		zoom_changed = true
+	if event is InputEventMouseButton:
+		if event.pressed:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				zoom_in()
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				zoom_out()
 
-	# Keyboard zoom (+ and -)
-	if Input.is_action_pressed("ui_focus_next"):  # Usually Tab, we'll add custom
-		zoom_level *= 1.02
-		zoom_changed = true
-	if Input.is_action_pressed("ui_focus_prev"):
-		zoom_level /= 1.02
-		zoom_changed = true
+func _input(_event):
+	# Keyboard zoom (continuous while held)
+	if Input.is_action_pressed("zoom_in"):
+		target_zoom = clamp(target_zoom * 1.02, MIN_ZOOM, MAX_ZOOM)
+	if Input.is_action_pressed("zoom_out"):
+		target_zoom = clamp(target_zoom / 1.02, MIN_ZOOM, MAX_ZOOM)
 
-	if zoom_changed:
-		zoom_level = clamp(zoom_level, MIN_ZOOM, MAX_ZOOM)
-		zoom = Vector2(zoom_level, zoom_level)
+func zoom_in():
+	target_zoom = clamp(target_zoom * ZOOM_STEP, MIN_ZOOM, MAX_ZOOM)
+
+func zoom_out():
+	target_zoom = clamp(target_zoom / ZOOM_STEP, MIN_ZOOM, MAX_ZOOM)
+
+func get_zoom_level() -> float:
+	return zoom_level
