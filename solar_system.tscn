@@ -1,0 +1,76 @@
+[gd_scene load_steps=5 format=3 uid="uid://c7x2qwvy5rn8p"]
+
+[ext_resource type="Script" path="res://solar_system.gd" id="1_solar"]
+[ext_resource type="Script" path="res://player.gd" id="2_player"]
+[ext_resource type="Script" path="res://camera.gd" id="3_camera"]
+[ext_resource type="Script" path="res://hud.gd" id="4_hud"]
+
+[node name="SolarSystem" type="Node2D"]
+script = ExtResource("1_solar")
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(149.6, 0)
+script = ExtResource("2_player")
+
+[node name="Ship" type="Polygon2D" parent="Player"]
+color = Color(0.2, 0.9, 0.3, 1)
+polygon = PackedVector2Array(15, 0, -10, -8, -5, 0, -10, 8)
+
+[node name="ThrustFlame" type="Polygon2D" parent="Player"]
+visible = false
+color = Color(1, 0.5, 0, 1)
+polygon = PackedVector2Array(-5, 0, -20, -5, -25, 0, -20, 5)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+zoom = Vector2(0.5, 0.5)
+script = ExtResource("3_camera")
+target_path = NodePath("..")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+anchors_preset = 0
+offset_right = 350.0
+offset_bottom = 200.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/MarginContainer"]
+layout_mode = 2
+
+[node name="SpeedLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "Speed: 0 m/s"
+
+[node name="AccelLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "Thrust: Coasting"
+
+[node name="TimeLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Time: 1x"
+
+[node name="PositionLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "From Sun: 0 AU"
+
+[node name="NearestLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "Nearest: Earth"
+
+[node name="ControlsLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "Controls: Arrows=Thrust | PgUp/PgDn=Time | Scroll=Zoom"
